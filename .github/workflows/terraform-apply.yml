@@ -1,0 +1,114 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to apply after merge"
+        required: false
+        default: main
+      confirm:
+        description: "Type yes to allow terraform apply"
+        required: true
+        default: "no"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-apply-main
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  TF_WORKING_DIR: terraform
+  AWS_REGION: us-east-2
+  TF_STATE_REGION: us-east-1
+  TF_STATE_KEY: eks-gitops/terraform.tfstate
+
+jobs:
+  apply:
+    if: ${{ inputs.confirm == 'yes' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Check out merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
+          role-session-name: github-actions-terraform-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write Terraform variables file
+        run: |
+          test -n "${{ secrets['TF_VARS_JSON'] }}" || {
+            echo "TF_VARS_JSON GitHub secret is required."
+            exit 1
+          }
+
+          cat > tfvars.base.json <<'EOF'
+          ${{ secrets['TF_VARS_JSON'] }}
+          EOF
+
+          jq \
+            --arg repo_url "${{ github.server_url }}/${{ github.repository }}.git" \
+            --arg branch "${{ inputs.ref }}" \
+            --arg auth_token "${{ github.token }}" \
+            '. + {
+              git: {
+                repo_url: $repo_url,
+                branch: $branch,
+                auth_token: $auth_token
+              }
+            }' tfvars.base.json > github.auto.tfvars.json
+
+      - name: Write Terraform backend config
+        run: |
+          test -n "${{ vars['TF_STATE_BUCKET'] }}" || {
+            echo "TF_STATE_BUCKET GitHub variable is required."
+            exit 1
+          }
+
+          cat > backend.hcl <<EOF
+          bucket       = "${{ vars['TF_STATE_BUCKET'] }}"
+          key          = "${{ vars['TF_STATE_KEY'] || env.TF_STATE_KEY }}"
+          region       = "${{ env.TF_STATE_REGION }}"
+          encrypt      = true
+          use_lockfile = true
+          EOF
+
+      - name: Terraform init
+        run: terraform init -input=false -backend-config=backend.hcl
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform apply
+        run: terraform apply -input=false -auto-approve
+
+      - name: Publish apply summary
+        run: |
+          {
+            echo '## Terraform Apply'
+            echo ''
+            echo 'Applied Terraform changes after manual confirmation through `workflow_dispatch`.'
+            echo ''
+            echo 'Confirmation input received: `${{ inputs.confirm }}`.'
+            echo ''
+            echo 'Run this workflow after the `terraform` branch has been merged into `main`.'
+          } >> "$GITHUB_STEP_SUMMARY"

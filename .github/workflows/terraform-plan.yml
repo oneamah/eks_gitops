@@ -1,0 +1,129 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - terraform/**
+      - .github/workflows/terraform-plan.yml
+      - .github/workflows/terraform-apply.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  TF_WORKING_DIR: terraform
+  AWS_REGION: us-east-2
+  TF_STATE_REGION: us-east-1
+  TF_STATE_KEY: eks-gitops/terraform.tfstate
+
+jobs:
+  plan:
+    if: ${{ github.head_ref == 'terraform' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
+          role-session-name: github-actions-terraform-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write Terraform variables file
+        run: |
+          test -n "${{ secrets['TF_VARS_JSON'] }}" || {
+            echo "TF_VARS_JSON GitHub secret is required."
+            exit 1
+          }
+
+          cat > tfvars.base.json <<'EOF'
+          ${{ secrets['TF_VARS_JSON'] }}
+          EOF
+
+          jq \
+            --arg repo_url "${{ github.server_url }}/${{ github.repository }}.git" \
+            --arg branch "${{ github.event.pull_request.base.ref }}" \
+            --arg auth_token "${{ github.token }}" \
+            '. + {
+              git: {
+                repo_url: $repo_url,
+                branch: $branch,
+                auth_token: $auth_token
+              }
+            }' tfvars.base.json > github.auto.tfvars.json
+
+      - name: Write Terraform backend config
+        run: |
+          test -n "${{ vars['TF_STATE_BUCKET'] }}" || {
+            echo "TF_STATE_BUCKET GitHub variable is required."
+            exit 1
+          }
+
+          cat > backend.hcl <<EOF
+          bucket       = "${{ vars['TF_STATE_BUCKET'] }}"
+          key          = "${{ vars['TF_STATE_KEY'] || env.TF_STATE_KEY }}"
+          region       = "${{ env.TF_STATE_REGION }}"
+          encrypt      = true
+          use_lockfile = true
+          EOF
+
+      - name: Terraform format check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init -input=false -backend-config=backend.hcl
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Render plan text
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-pr-${{ github.event.pull_request.number }}
+          path: |
+            terraform/tfplan
+            terraform/tfplan.txt
+          if-no-files-found: error
+
+      - name: Publish plan summary
+        run: |
+          {
+            echo '## Terraform Plan'
+            echo ''
+            echo 'Triggered for PR from `terraform` into `main`.'
+            echo ''
+            echo '```text'
+            sed -n '1,200p' tfplan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
