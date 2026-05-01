@@ -89,11 +89,13 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
 }
 
 locals {
-  github_actions_oidc_subjects = length(var.github_actions_oidc_subjects) > 0 ? var.github_actions_oidc_subjects : [
-    "repo:${var.github_repository}:ref:refs/heads/main",
-    "repo:${var.github_repository}:ref:refs/heads/terraform",
-    "repo:${var.github_repository}:pull_request",
-  ]
+  github_actions_oidc_subjects = !var.create_github_actions_role ? [] : (
+    length(var.github_actions_oidc_subjects) > 0 ? var.github_actions_oidc_subjects : [
+      "repo:${var.github_repository}:ref:refs/heads/main",
+      "repo:${var.github_repository}:ref:refs/heads/terraform",
+      "repo:${var.github_repository}:pull_request",
+    ]
+  )
 }
 
 data "aws_iam_policy_document" "github_actions_assume_role" {

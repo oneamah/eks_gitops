@@ -7,7 +7,7 @@ module "iam" {
   cluster_name               = var.cluster_name
   create_github_actions_role = true
   github_actions_role_name   = var.github_actions_role_name
-  github_repository          = trimsuffix(replace(var.git.repo_url, "https://github.com/", ""), ".git")
+  github_repository          = var.github_repository
   github_actions_ecr_repository_arns = [
     module.ecr.backend_repository_arn,
     module.ecr.frontend_repository_arn,
