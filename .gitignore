@@ -1,0 +1,58 @@
+.DS_Store
+Thumbs.db
+
+# Editor and IDE files
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.tmp
+*~
+**/.history/
+**/.vscode/*
+!**/.vscode/settings.json
+!**/.vscode/tasks.json
+!**/.vscode/launch.json
+!**/.vscode/extensions.json
+!**/.vscode/mcp.json
+
+# .NET build output
+**/bin/
+**/obj/
+*.rsuser
+
+# Node and Angular output
+**/node_modules/
+**/.angular/
+**/dist/
+**/coverage/
+**/tmp/
+**/out-tsc/
+**/bazel-out/
+.sass-cache/
+connect.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+
+# Terraform state and local overrides
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
