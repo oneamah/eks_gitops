@@ -5,7 +5,8 @@ module "networking" {
 module "iam" {
   source                              = "./modules/iam"
   cluster_name                        = var.cluster_name
-  create_github_actions_role          = true
+  create_github_actions_role          = var.create_github_actions_role
+  use_existing_github_actions_role    = var.use_existing_github_actions_role
   create_github_actions_oidc_provider = var.create_github_actions_oidc_provider
   github_actions_role_name            = var.github_actions_role_name
   github_repository                   = var.github_repository
@@ -40,6 +41,7 @@ module "ecr" {
   image_retention_count    = var.ecr_image_retention_count
 }
 module "gitops" {
+  count                       = var.deploy_gitops_addons ? 1 : 0
   source                      = "./modules/gitops"
   cluster_name                = var.cluster_name
   aws_region                  = var.aws_region

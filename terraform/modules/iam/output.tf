@@ -30,5 +30,5 @@ output "oidc_provider_arn" {
 
 output "github_actions_role_arn" {
   description = "IAM role ARN for GitHub Actions OIDC CI/CD access"
-  value       = try(aws_iam_role.github_actions[0].arn, null)
+  value       = try(aws_iam_role.github_actions[0].arn, data.aws_iam_role.github_actions_existing[0].arn, null)
 }
