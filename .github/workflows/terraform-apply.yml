@@ -1,0 +1,85 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to apply after merge"
+        required: false
+        default: main
+      confirm:
+        description: "Type yes to allow terraform apply"
+        required: true
+        default: "no"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-apply-main
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  TF_WORKING_DIR: terraform
+  AWS_REGION: us-east-2
+
+jobs:
+  apply:
+    if: ${{ inputs.confirm == 'yes' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Check out merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
+          role-session-name: github-actions-terraform-apply-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write Terraform variables file
+        run: |
+          test -n "${{ secrets['TF_VARS_JSON'] }}" || {
+            echo "TF_VARS_JSON GitHub secret is required."
+            exit 1
+          }
+
+          cat > github.auto.tfvars.json <<'EOF'
+          ${{ secrets['TF_VARS_JSON'] }}
+          EOF
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform apply
+        run: terraform apply -input=false -auto-approve
+
+      - name: Publish apply summary
+        run: |
+          {
+            echo '## Terraform Apply'
+            echo ''
+            echo 'Applied Terraform changes after manual confirmation through `workflow_dispatch`.'
+            echo ''
+            echo 'Confirmation input received: `${{ inputs.confirm }}`.'
+            echo ''
+            echo 'Run this workflow after the `terraform` branch has been merged into `main`.'
+          } >> "$GITHUB_STEP_SUMMARY"

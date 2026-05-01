@@ -1,0 +1,270 @@
+data "aws_iam_policy_document" "eks_cluster_assume_role" {
+  count = var.create_eks_base_roles ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["eks.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+data "aws_iam_policy_document" "eks_node_assume_role" {
+  count = var.create_eks_base_roles ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "eks_cluster" {
+  count              = var.create_eks_base_roles ? 1 : 0
+  name               = "${var.cluster_name}-cluster-role"
+  assume_role_policy = data.aws_iam_policy_document.eks_cluster_assume_role[0].json
+}
+
+resource "aws_iam_role" "eks_node_group" {
+  count              = var.create_eks_base_roles ? 1 : 0
+  name               = "${var.cluster_name}-node-role"
+  assume_role_policy = data.aws_iam_policy_document.eks_node_assume_role[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+  count      = var.create_eks_base_roles ? 1 : 0
+  role       = aws_iam_role.eks_cluster[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_worker_policy" {
+  count      = var.create_eks_base_roles ? 1 : 0
+  role       = aws_iam_role.eks_node_group[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_cni_policy" {
+  count      = var.create_eks_base_roles ? 1 : 0
+  role       = aws_iam_role.eks_node_group[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_ecr_policy" {
+  count      = var.create_eks_base_roles ? 1 : 0
+  role       = aws_iam_role.eks_node_group[0].name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+data "tls_certificate" "eks_oidc" {
+  count = var.create_irsa_roles ? 1 : 0
+  url   = var.oidc_provider_issuer_url
+}
+
+resource "aws_iam_openid_connect_provider" "eks" {
+  count           = var.create_irsa_roles ? 1 : 0
+  url             = var.oidc_provider_issuer_url
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks_oidc[0].certificates[0].sha1_fingerprint]
+}
+
+data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {
+  count = var.create_irsa_roles ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.eks[0].arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_issuer_url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "ebs_csi_assume_role" {
+  count = var.create_irsa_roles ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.eks[0].arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_issuer_url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "external_dns_assume_role" {
+  count = var.create_irsa_roles ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.eks[0].arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_issuer_url, "https://", "")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(var.oidc_provider_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:external-dns"]
+    }
+  }
+}
+data "aws_iam_policy_document" "aws_load_balancer_controller" {
+  count = var.create_irsa_roles ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "acm:DescribeCertificate",
+      "acm:ListCertificates",
+      "cognito-idp:DescribeUserPoolClient",
+      "ec2:AllocateAddress",
+      "ec2:AssociateAddress",
+      "ec2:AuthorizeSecurityGroupIngress",
+      "ec2:CreateSecurityGroup",
+      "ec2:CreateTags",
+      "ec2:DeleteSecurityGroup",
+      "ec2:DeleteTags",
+      "ec2:Describe*",
+      "ec2:DisassociateAddress",
+      "ec2:ModifyInstanceAttribute",
+      "ec2:ModifyNetworkInterfaceAttribute",
+      "ec2:RevokeSecurityGroupIngress",
+      "elasticloadbalancing:*",
+      "iam:CreateServiceLinkedRole",
+      "iam:GetServerCertificate",
+      "iam:ListServerCertificates",
+      "shield:DescribeProtection",
+      "shield:GetSubscriptionState",
+      "shield:ListProtections",
+      "tag:GetResources",
+      "tag:TagResources",
+      "waf:GetWebACL",
+      "waf-regional:GetWebACLForResource",
+      "waf-regional:GetWebACL",
+      "waf-regional:AssociateWebACL",
+      "waf-regional:DisassociateWebACL",
+      "wafv2:AssociateWebACL",
+      "wafv2:DisassociateWebACL",
+      "wafv2:GetWebACL",
+      "wafv2:GetWebACLForResource"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "aws_load_balancer_controller" {
+  count       = var.create_irsa_roles ? 1 : 0
+  name        = "${var.cluster_name}-aws-load-balancer-controller"
+  description = "Policy for the AWS Load Balancer Controller"
+  policy      = data.aws_iam_policy_document.aws_load_balancer_controller[0].json
+}
+
+resource "aws_iam_role" "aws_load_balancer_controller" {
+  count              = var.create_irsa_roles ? 1 : 0
+  name               = "${var.cluster_name}-alb-controller-role"
+  assume_role_policy = data.aws_iam_policy_document.aws_load_balancer_controller_assume_role[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "aws_load_balancer_controller" {
+  count      = var.create_irsa_roles ? 1 : 0
+  role       = aws_iam_role.aws_load_balancer_controller[0].name
+  policy_arn = aws_iam_policy.aws_load_balancer_controller[0].arn
+}
+
+resource "aws_iam_role" "ebs_csi" {
+  count              = var.create_irsa_roles ? 1 : 0
+  name               = "${var.cluster_name}-ebs-csi-role"
+  assume_role_policy = data.aws_iam_policy_document.ebs_csi_assume_role[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  count      = var.create_irsa_roles ? 1 : 0
+  role       = aws_iam_role.ebs_csi[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+data "aws_iam_policy_document" "external_dns" {
+  count = var.create_irsa_roles ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "route53:ChangeResourceRecordSets"
+    ]
+    resources = ["arn:aws:route53:::hostedzone/*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "route53:ListHostedZones",
+      "route53:ListResourceRecordSets",
+      "route53:ListTagsForResource"
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "external_dns" {
+  count       = var.create_irsa_roles ? 1 : 0
+  name        = "${var.cluster_name}-external-dns"
+  description = "Policy for ExternalDNS"
+  policy      = data.aws_iam_policy_document.external_dns[0].json
+}
+
+resource "aws_iam_role" "external_dns" {
+  count              = var.create_irsa_roles ? 1 : 0
+  name               = "${var.cluster_name}-external-dns-role"
+  assume_role_policy = data.aws_iam_policy_document.external_dns_assume_role[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "external_dns" {
+  count      = var.create_irsa_roles ? 1 : 0
+  role       = aws_iam_role.external_dns[0].name
+  policy_arn = aws_iam_policy.external_dns[0].arn
+}

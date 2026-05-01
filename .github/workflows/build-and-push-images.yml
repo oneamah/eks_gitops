@@ -1,0 +1,107 @@
+name: Build And Push Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - frontend/**
+      - .github/workflows/build-and-push-images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: build-and-push-images-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  AWS_REGION: us-east-2
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - service: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
+          role-session-name: github-actions-build-${{ matrix.service }}-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve ECR repository URL
+        id: resolve-ecr
+        shell: bash
+        run: |
+          test -n "${{ secrets['TF_VARS_JSON'] }}" || {
+            echo "TF_VARS_JSON GitHub secret is required."
+            exit 1
+          }
+
+          cat > tfvars.json <<'EOF'
+          ${{ secrets['TF_VARS_JSON'] }}
+          EOF
+
+          repository_name="$(jq -r --arg service '${{ matrix.service }}' '
+            if $service == "backend" then
+              .backend_ecr_repository_name // "backend"
+            else
+              .frontend_ecr_repository_name // "frontend"
+            end
+          ' tfvars.json)"
+
+          repository_url="$(aws ecr describe-repositories \
+            --repository-names "$repository_name" \
+            --region "$AWS_REGION" \
+            --query 'repositories[0].repositoryUri' \
+            --output text)"
+
+          echo "repository_name=$repository_name" >> "$GITHUB_OUTPUT"
+          echo "repository_url=$repository_url" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ${{ steps.resolve-ecr.outputs.repository_url }}:${{ github.sha }}
+            ${{ steps.resolve-ecr.outputs.repository_url }}:latest
+
+      - name: Publish image summary
+        shell: bash
+        run: |
+          {
+            echo "## ${SERVICE_LABEL} image"
+            echo ""
+            echo "Repository: ${{ steps.resolve-ecr.outputs.repository_url }}"
+            echo ""
+            echo "Tags pushed:"
+            echo "- ${{ github.sha }}"
+            echo "- latest"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SERVICE_LABEL: ${{ matrix.service }}

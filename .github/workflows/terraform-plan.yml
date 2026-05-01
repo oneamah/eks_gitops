@@ -1,0 +1,100 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - terraform/**
+      - .github/workflows/terraform-plan.yml
+      - .github/workflows/terraform-apply.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  TF_WORKING_DIR: terraform
+  AWS_REGION: us-east-2
+
+jobs:
+  plan:
+    if: ${{ github.head_ref == 'terraform' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
+          role-session-name: github-actions-terraform-plan-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write Terraform variables file
+        run: |
+          test -n "${{ secrets['TF_VARS_JSON'] }}" || {
+            echo "TF_VARS_JSON GitHub secret is required."
+            exit 1
+          }
+
+          cat > github.auto.tfvars.json <<'EOF'
+          ${{ secrets['TF_VARS_JSON'] }}
+          EOF
+
+      - name: Terraform format check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -input=false -no-color -out=tfplan
+
+      - name: Render plan text
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-pr-${{ github.event.pull_request.number }}
+          path: |
+            terraform/tfplan
+            terraform/tfplan.txt
+          if-no-files-found: error
+
+      - name: Publish plan summary
+        run: |
+          {
+            echo '## Terraform Plan'
+            echo ''
+            echo 'Triggered for PR from `terraform` into `main`.'
+            echo ''
+            echo '```text'
+            sed -n '1,200p' tfplan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
