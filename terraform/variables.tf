@@ -155,3 +155,15 @@ variable "github_actions_role_name" {
   type        = string
   default     = "terraform"
 }
+
+variable "create_github_actions_oidc_provider" {
+  description = "Whether Terraform should create the GitHub Actions OIDC provider instead of reusing an existing one."
+  type        = bool
+  default     = false
+}
+
+variable "cluster_version" {
+  description = "Kubernetes version for the EKS cluster."
+  type        = string
+  default     = "1.31"
+}
