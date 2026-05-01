@@ -7,6 +7,10 @@ on:
         description: "Git ref to apply after merge"
         required: false
         default: main
+      deploy_gitops_addons:
+        description: "Set to true to enable Argo CD, Grafana, Prometheus, Loki, and other GitOps add-ons"
+        required: true
+        default: "false"
       confirm:
         description: "Type yes to allow terraform apply"
         required: true
@@ -69,7 +73,9 @@ jobs:
             --arg repo_url "${{ github.server_url }}/${{ github.repository }}.git" \
             --arg branch "${{ inputs.ref }}" \
             --arg auth_token "${{ github.token }}" \
+            --argjson deploy_gitops_addons ${{ inputs.deploy_gitops_addons }} \
             '. + {
+              deploy_gitops_addons: $deploy_gitops_addons,
               git: {
                 repo_url: $repo_url,
                 branch: $branch,
@@ -109,6 +115,8 @@ jobs:
             echo 'Applied Terraform changes after manual confirmation through `workflow_dispatch`.'
             echo ''
             echo 'Confirmation input received: `${{ inputs.confirm }}`.'
+            echo ''
+            echo 'deploy_gitops_addons: `${{ inputs.deploy_gitops_addons }}`.'
             echo ''
             echo 'Run this workflow after the `terraform` branch has been merged into `main`.'
           } >> "$GITHUB_STEP_SUMMARY"
