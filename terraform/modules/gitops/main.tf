@@ -194,6 +194,11 @@ resource "helm_release" "aws_load_balancer_controller" {
   ]
 }
 
+resource "time_sleep" "aws_load_balancer_controller_webhook_ready" {
+  depends_on      = [helm_release.aws_load_balancer_controller]
+  create_duration = "60s"
+}
+
 resource "helm_release" "aws_ebs_csi_driver" {
   name             = "aws-ebs-csi-driver"
   namespace        = "kube-system"
@@ -222,6 +227,8 @@ resource "helm_release" "datadog" {
   chart            = "datadog"
   version          = "3.119.0"
   create_namespace = true
+
+  depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
 
   set = [
     {
@@ -258,6 +265,8 @@ resource "helm_release" "external_dns" {
   version          = "1.18.0"
   create_namespace = false
 
+  depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
+
   values = [yamlencode({
     provider      = "aws"
     txtOwnerId    = var.external_dns_txt_owner_id
@@ -277,7 +286,7 @@ resource "helm_release" "argocd" {
   chart            = "argo-cd"
   create_namespace = true
 
-  depends_on = [aws_acm_certificate_validation.argocd]
+  depends_on = [aws_acm_certificate_validation.argocd, time_sleep.aws_load_balancer_controller_webhook_ready]
 
   set_sensitive = [
     {
@@ -326,6 +335,8 @@ resource "helm_release" "argo_rollouts" {
   version          = "2.40.5"
   create_namespace = true
 
+  depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
+
   values = [yamlencode({
     dashboard = {
       enabled = true
@@ -344,6 +355,8 @@ resource "helm_release" "metrics_server" {
   version          = "3.12.2"
   create_namespace = false
 
+  depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
+
   values = [yamlencode({
     args = [
       "--kubelet-insecure-tls",
@@ -358,6 +371,8 @@ resource "helm_release" "prometheus" {
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "prometheus"
   create_namespace = true
+
+  depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
 
   values = [yamlencode({
     alertmanager = {
@@ -386,6 +401,8 @@ resource "helm_release" "loki" {
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "loki-stack"
   create_namespace = true
+
+  depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
 
   values = [yamlencode({
     grafana = {
@@ -418,7 +435,7 @@ resource "helm_release" "grafana" {
   chart            = "grafana"
   create_namespace = true
 
-  depends_on = [helm_release.prometheus, helm_release.loki, aws_acm_certificate_validation.grafana]
+  depends_on = [helm_release.prometheus, helm_release.loki, aws_acm_certificate_validation.grafana, time_sleep.aws_load_balancer_controller_webhook_ready]
 
   set_sensitive = [
     {
