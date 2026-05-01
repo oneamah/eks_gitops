@@ -27,6 +27,7 @@ env:
   TF_INPUT: false
   TF_WORKING_DIR: terraform
   AWS_REGION: us-east-2
+  TF_STATE_KEY: eks-gitops/terraform.tfstate
 
 jobs:
   plan:
@@ -75,11 +76,26 @@ jobs:
               }
             }' tfvars.base.json > github.auto.tfvars.json
 
+      - name: Write Terraform backend config
+        run: |
+          test -n "${{ vars['TF_STATE_BUCKET'] }}" || {
+            echo "TF_STATE_BUCKET GitHub variable is required."
+            exit 1
+          }
+
+          cat > backend.hcl <<EOF
+          bucket       = "${{ vars['TF_STATE_BUCKET'] }}"
+          key          = "${{ vars['TF_STATE_KEY'] || env.TF_STATE_KEY }}"
+          region       = "${{ env.AWS_REGION }}"
+          encrypt      = true
+          use_lockfile = true
+          EOF
+
       - name: Terraform format check
         run: terraform fmt -check -recursive
 
       - name: Terraform init
-        run: terraform init -input=false
+        run: terraform init -input=false -backend-config=backend.hcl
 
       - name: Terraform validate
         run: terraform validate
