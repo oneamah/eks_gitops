@@ -25,6 +25,11 @@ output "grafana_acm_certificate_arn" {
   value       = module.gitops.grafana_acm_certificate_arn
 }
 
+output "argo_rollouts_namespace" {
+  description = "Namespace where Argo Rollouts is deployed"
+  value       = module.gitops.argo_rollouts_namespace
+}
+
 output "route53_zone_id" {
   description = "Route53 hosted zone ID used by ExternalDNS"
   value       = module.gitops.route53_zone_id
@@ -58,4 +63,9 @@ output "backend_ecr_repository_name" {
 output "frontend_ecr_repository_name" {
   description = "ECR repository name for the frontend image"
   value       = module.ecr.frontend_repository_name
+}
+
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC CI/CD access"
+  value       = module.iam.github_actions_role_arn
 }

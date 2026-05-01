@@ -39,6 +39,11 @@ output "argocd_acm_certificate_arn" {
   value       = local.argocd_effective_certificate_arn
 }
 
+output "argo_rollouts_namespace" {
+  description = "Namespace where Argo Rollouts is deployed"
+  value       = helm_release.argo_rollouts.namespace
+}
+
 output "monitoring_namespace" {
   description = "Namespace where Prometheus, Loki, and Grafana are deployed"
   value       = local.monitoring_namespace
