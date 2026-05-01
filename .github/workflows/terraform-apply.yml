@@ -59,9 +59,21 @@ jobs:
             exit 1
           }
 
-          cat > github.auto.tfvars.json <<'EOF'
+          cat > tfvars.base.json <<'EOF'
           ${{ secrets['TF_VARS_JSON'] }}
           EOF
+
+          jq \
+            --arg repo_url "${{ github.server_url }}/${{ github.repository }}.git" \
+            --arg branch "${{ inputs.ref }}" \
+            --arg auth_token "${{ github.token }}" \
+            '. + {
+              git: {
+                repo_url: $repo_url,
+                branch: $branch,
+                auth_token: $auth_token
+              }
+            }' tfvars.base.json > github.auto.tfvars.json
 
       - name: Terraform init
         run: terraform init -input=false
