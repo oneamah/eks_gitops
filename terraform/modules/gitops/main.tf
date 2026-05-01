@@ -1,24 +1,24 @@
 locals {
-  datadog_enabled           = var.datadog_api_key != ""
-  image_pull_secret_enabled = var.image_pull_secret_server != "" && var.image_pull_secret_username != "" && var.image_pull_secret_password != ""
+  datadog_enabled                       = var.datadog_api_key != ""
+  image_pull_secret_enabled             = var.image_pull_secret_server != "" && var.image_pull_secret_username != "" && var.image_pull_secret_password != ""
   effective_external_dns_domain_filters = length(var.external_dns_domain_filters) > 0 ? var.external_dns_domain_filters : [var.route53_zone_name]
-  argocd_admin_password               = var.argocd_admin_password != "" ? var.argocd_admin_password : random_password.argocd_admin[0].result
-  monitoring_namespace               = "monitoring"
-  grafana_admin_password             = random_password.grafana_admin.result
-  route53_zone_id                     = var.create_route53_zone ? aws_route53_zone.primary[0].zone_id : data.aws_route53_zone.primary[0].zone_id
-  argocd_effective_certificate_arn    = var.argocd_acm_certificate_arn != "" ? var.argocd_acm_certificate_arn : aws_acm_certificate_validation.argocd[0].certificate_arn
-  argocd_scheme                       = local.argocd_effective_certificate_arn != "" ? "https" : "http"
-  argocd_url                          = "${local.argocd_scheme}://${var.argocd_hostname}"
-  grafana_effective_certificate_arn   = var.grafana_acm_certificate_arn != "" ? var.grafana_acm_certificate_arn : aws_acm_certificate_validation.grafana[0].certificate_arn
-  grafana_scheme                      = local.grafana_effective_certificate_arn != "" ? "https" : "http"
-  grafana_url                         = "${local.grafana_scheme}://${var.grafana_hostname}"
+  argocd_admin_password                 = var.argocd_admin_password != "" ? var.argocd_admin_password : random_password.argocd_admin[0].result
+  monitoring_namespace                  = "monitoring"
+  grafana_admin_password                = random_password.grafana_admin.result
+  route53_zone_id                       = var.create_route53_zone ? aws_route53_zone.primary[0].zone_id : data.aws_route53_zone.primary[0].zone_id
+  argocd_effective_certificate_arn      = var.argocd_acm_certificate_arn != "" ? var.argocd_acm_certificate_arn : aws_acm_certificate_validation.argocd[0].certificate_arn
+  argocd_scheme                         = local.argocd_effective_certificate_arn != "" ? "https" : "http"
+  argocd_url                            = "${local.argocd_scheme}://${var.argocd_hostname}"
+  grafana_effective_certificate_arn     = var.grafana_acm_certificate_arn != "" ? var.grafana_acm_certificate_arn : aws_acm_certificate_validation.grafana[0].certificate_arn
+  grafana_scheme                        = local.grafana_effective_certificate_arn != "" ? "https" : "http"
+  grafana_url                           = "${local.grafana_scheme}://${var.grafana_hostname}"
   argocd_ingress_annotations = merge(
     {
-      "alb.ingress.kubernetes.io/backend-protocol"           = "HTTP"
-      "alb.ingress.kubernetes.io/listen-ports"               = "[{\"HTTP\":80}]"
-      "alb.ingress.kubernetes.io/scheme"                     = "internet-facing"
-      "alb.ingress.kubernetes.io/target-type"                = "ip"
-      "external-dns.alpha.kubernetes.io/hostname"            = var.argocd_hostname
+      "alb.ingress.kubernetes.io/backend-protocol" = "HTTP"
+      "alb.ingress.kubernetes.io/listen-ports"     = "[{\"HTTP\":80}]"
+      "alb.ingress.kubernetes.io/scheme"           = "internet-facing"
+      "alb.ingress.kubernetes.io/target-type"      = "ip"
+      "external-dns.alpha.kubernetes.io/hostname"  = var.argocd_hostname
     },
     local.argocd_effective_certificate_arn != "" ? {
       "alb.ingress.kubernetes.io/certificate-arn" = local.argocd_effective_certificate_arn
@@ -420,10 +420,10 @@ resource "helm_release" "grafana" {
       enabled          = true
       ingressClassName = "alb"
       annotations      = local.grafana_ingress_annotations
-      hosts             = [var.grafana_hostname]
-      path              = "/"
-      pathType          = "Prefix"
-      tls               = []
+      hosts            = [var.grafana_hostname]
+      path             = "/"
+      pathType         = "Prefix"
+      tls              = []
     }
     datasources = {
       "datasources.yaml" = {
