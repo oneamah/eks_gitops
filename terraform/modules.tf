@@ -3,11 +3,12 @@ module "networking" {
   cluster_name = var.cluster_name
 }
 module "iam" {
-  source                     = "./modules/iam"
-  cluster_name               = var.cluster_name
-  create_github_actions_role = true
-  github_actions_role_name   = var.github_actions_role_name
-  github_repository          = var.github_repository
+  source                              = "./modules/iam"
+  cluster_name                        = var.cluster_name
+  create_github_actions_role          = true
+  create_github_actions_oidc_provider = var.create_github_actions_oidc_provider
+  github_actions_role_name            = var.github_actions_role_name
+  github_repository                   = var.github_repository
   github_actions_ecr_repository_arns = [
     module.ecr.backend_repository_arn,
     module.ecr.frontend_repository_arn,
@@ -16,6 +17,7 @@ module "iam" {
 module "eks" {
   source                    = "./modules/eks"
   cluster_name              = var.cluster_name
+  cluster_version           = var.cluster_version
   cluster_role_arn          = module.iam.eks_cluster_role_arn
   node_role_arn             = module.iam.eks_node_role_arn
   vpc_id                    = module.networking.vpc_id
@@ -23,12 +25,13 @@ module "eks" {
   private_security_group_id = module.sg.private_security_group_id
 }
 module "iam_addons" {
-  source                     = "./modules/iam"
-  cluster_name               = var.cluster_name
-  create_eks_base_roles      = false
-  create_irsa_roles          = true
-  create_github_actions_role = false
-  oidc_provider_issuer_url   = module.eks.cluster_oidc_issuer_url
+  source                              = "./modules/iam"
+  cluster_name                        = var.cluster_name
+  create_eks_base_roles               = false
+  create_irsa_roles                   = true
+  create_github_actions_role          = false
+  create_github_actions_oidc_provider = false
+  oidc_provider_issuer_url            = module.eks.cluster_oidc_issuer_url
 }
 module "ecr" {
   source                   = "./modules/ecr"

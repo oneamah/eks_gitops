@@ -28,6 +28,12 @@ variable "create_github_actions_role" {
   default     = false
 }
 
+variable "create_github_actions_oidc_provider" {
+  description = "Whether Terraform should create the GitHub Actions OIDC provider instead of reusing an existing one"
+  type        = bool
+  default     = false
+}
+
 variable "github_actions_role_name" {
   description = "Name of the GitHub Actions IAM role"
   type        = string

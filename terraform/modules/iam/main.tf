@@ -70,8 +70,12 @@ data "tls_certificate" "eks_oidc" {
 }
 
 data "tls_certificate" "github_actions_oidc" {
-  count = var.create_github_actions_role ? 1 : 0
+  count = var.create_github_actions_role && var.create_github_actions_oidc_provider ? 1 : 0
   url   = "https://token.actions.githubusercontent.com"
+}
+
+data "aws_caller_identity" "current" {
+  count = var.create_github_actions_role ? 1 : 0
 }
 
 resource "aws_iam_openid_connect_provider" "eks" {
@@ -82,13 +86,18 @@ resource "aws_iam_openid_connect_provider" "eks" {
 }
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
-  count           = var.create_github_actions_role ? 1 : 0
+  count           = var.create_github_actions_role && var.create_github_actions_oidc_provider ? 1 : 0
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.github_actions_oidc[0].certificates[0].sha1_fingerprint]
 }
 
 locals {
+  github_actions_oidc_provider_arn = !var.create_github_actions_role ? null : (
+    var.create_github_actions_oidc_provider
+    ? aws_iam_openid_connect_provider.github_actions[0].arn
+    : "arn:aws:iam::${data.aws_caller_identity.current[0].account_id}:oidc-provider/token.actions.githubusercontent.com"
+  )
   github_actions_oidc_subjects = !var.create_github_actions_role ? [] : (
     length(var.github_actions_oidc_subjects) > 0 ? var.github_actions_oidc_subjects : [
       "repo:${var.github_repository}:ref:refs/heads/main",
@@ -107,7 +116,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github_actions[0].arn]
+      identifiers = [local.github_actions_oidc_provider_arn]
     }
 
     condition {
