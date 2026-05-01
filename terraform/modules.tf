@@ -3,12 +3,12 @@ module "networking" {
   cluster_name = var.cluster_name
 }
 module "iam" {
-  source                     = "./modules/iam"
-  cluster_name               = var.cluster_name
-  create_github_actions_role = true
+  source                              = "./modules/iam"
+  cluster_name                        = var.cluster_name
+  create_github_actions_role          = true
   create_github_actions_oidc_provider = var.create_github_actions_oidc_provider
-  github_actions_role_name   = var.github_actions_role_name
-  github_repository          = var.github_repository
+  github_actions_role_name            = var.github_actions_role_name
+  github_repository                   = var.github_repository
   github_actions_ecr_repository_arns = [
     module.ecr.backend_repository_arn,
     module.ecr.frontend_repository_arn,
@@ -25,13 +25,13 @@ module "eks" {
   private_security_group_id = module.sg.private_security_group_id
 }
 module "iam_addons" {
-  source                     = "./modules/iam"
-  cluster_name               = var.cluster_name
-  create_eks_base_roles      = false
-  create_irsa_roles          = true
-  create_github_actions_role = false
+  source                              = "./modules/iam"
+  cluster_name                        = var.cluster_name
+  create_eks_base_roles               = false
+  create_irsa_roles                   = true
+  create_github_actions_role          = false
   create_github_actions_oidc_provider = false
-  oidc_provider_issuer_url   = module.eks.cluster_oidc_issuer_url
+  oidc_provider_issuer_url            = module.eks.cluster_oidc_issuer_url
 }
 module "ecr" {
   source                   = "./modules/ecr"
