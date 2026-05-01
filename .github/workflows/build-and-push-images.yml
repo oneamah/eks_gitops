@@ -22,6 +22,7 @@ env:
   TF_IN_AUTOMATION: true
   TF_INPUT: false
   AWS_REGION: us-east-2
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-push:
@@ -39,14 +40,18 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
           role-session-name: github-actions-build-${{ matrix.service }}-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Show AWS caller identity
+        shell: bash
+        run: aws sts get-caller-identity
 
       - name: Resolve ECR repository URL
         id: resolve-ecr
@@ -73,7 +78,12 @@ jobs:
             --repository-names "$repository_name" \
             --region "$AWS_REGION" \
             --query 'repositories[0].repositoryUri' \
-            --output text)"
+            --output text 2>ecr_error.log)" || {
+              echo "Failed to resolve ECR repository '$repository_name' in region '$AWS_REGION'." >&2
+              cat ecr_error.log >&2
+              echo "Make sure Terraform has already created the repository and the assumed role can call ecr:DescribeRepositories." >&2
+              exit 1
+            }
 
           echo "repository_name=$repository_name" >> "$GITHUB_OUTPUT"
           echo "repository_url=$repository_url" >> "$GITHUB_OUTPUT"

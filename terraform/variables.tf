@@ -143,3 +143,15 @@ variable "ecr_image_retention_count" {
   type        = number
   default     = 10
 }
+
+variable "github_repository" {
+  description = "GitHub repository in owner/repo format allowed to assume the GitHub Actions role."
+  type        = string
+  default     = "oneamah/eks_gitops"
+}
+
+variable "github_actions_role_name" {
+  description = "IAM role name for GitHub Actions OIDC CI/CD access."
+  type        = string
+  default     = "terraform"
+}

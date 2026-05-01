@@ -318,6 +318,24 @@ resource "helm_release" "argocd" {
   })]
 }
 
+resource "helm_release" "argo_rollouts" {
+  name             = "argo-rollouts"
+  namespace        = "argo-rollouts"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-rollouts"
+  version          = "2.40.5"
+  create_namespace = true
+
+  values = [yamlencode({
+    dashboard = {
+      enabled = true
+      service = {
+        type = "ClusterIP"
+      }
+    }
+  })]
+}
+
 resource "helm_release" "metrics_server" {
   name             = "metrics-server"
   namespace        = "kube-system"

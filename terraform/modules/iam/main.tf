@@ -69,11 +69,107 @@ data "tls_certificate" "eks_oidc" {
   url   = var.oidc_provider_issuer_url
 }
 
+data "tls_certificate" "github_actions_oidc" {
+  count = var.create_github_actions_role ? 1 : 0
+  url   = "https://token.actions.githubusercontent.com"
+}
+
 resource "aws_iam_openid_connect_provider" "eks" {
   count           = var.create_irsa_roles ? 1 : 0
   url             = var.oidc_provider_issuer_url
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = [data.tls_certificate.eks_oidc[0].certificates[0].sha1_fingerprint]
+}
+
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  count           = var.create_github_actions_role ? 1 : 0
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.github_actions_oidc[0].certificates[0].sha1_fingerprint]
+}
+
+locals {
+  github_actions_oidc_subjects = !var.create_github_actions_role ? [] : (
+    length(var.github_actions_oidc_subjects) > 0 ? var.github_actions_oidc_subjects : [
+      "repo:${var.github_repository}:ref:refs/heads/main",
+      "repo:${var.github_repository}:ref:refs/heads/terraform",
+      "repo:${var.github_repository}:pull_request",
+    ]
+  )
+}
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  count = var.create_github_actions_role ? 1 : 0
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github_actions[0].arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = local.github_actions_oidc_subjects
+    }
+  }
+}
+
+data "aws_iam_policy_document" "github_actions_ecr_push" {
+  count = var.create_github_actions_role ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:GetAuthorizationToken"
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeImages",
+      "ecr:DescribeRepositories",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:ListImages",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart"
+    ]
+    resources = var.github_actions_ecr_repository_arns
+  }
+}
+
+resource "aws_iam_policy" "github_actions_ecr_push" {
+  count       = var.create_github_actions_role ? 1 : 0
+  name        = "${var.github_actions_role_name}-ecr-push"
+  description = "Minimal ECR push policy for GitHub Actions"
+  policy      = data.aws_iam_policy_document.github_actions_ecr_push[0].json
+}
+
+resource "aws_iam_role" "github_actions" {
+  count              = var.create_github_actions_role ? 1 : 0
+  name               = var.github_actions_role_name
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_ecr_push" {
+  count      = var.create_github_actions_role ? 1 : 0
+  role       = aws_iam_role.github_actions[0].name
+  policy_arn = aws_iam_policy.github_actions_ecr_push[0].arn
 }
 
 data "aws_iam_policy_document" "aws_load_balancer_controller_assume_role" {

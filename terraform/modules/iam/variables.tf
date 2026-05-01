@@ -21,3 +21,33 @@ variable "oidc_provider_issuer_url" {
   type        = string
   default     = null
 }
+
+variable "create_github_actions_role" {
+  description = "Whether to create a GitHub Actions OIDC role for CI/CD access"
+  type        = bool
+  default     = false
+}
+
+variable "github_actions_role_name" {
+  description = "Name of the GitHub Actions IAM role"
+  type        = string
+  default     = "terraform"
+}
+
+variable "github_repository" {
+  description = "GitHub repository in owner/repo format allowed to assume the CI/CD role"
+  type        = string
+  default     = null
+}
+
+variable "github_actions_oidc_subjects" {
+  description = "Optional OIDC subject patterns allowed to assume the GitHub Actions role"
+  type        = list(string)
+  default     = []
+}
+
+variable "github_actions_ecr_repository_arns" {
+  description = "ECR repository ARNs the GitHub Actions role may push to"
+  type        = list(string)
+  default     = []
+}
