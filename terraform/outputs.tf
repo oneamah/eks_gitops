@@ -1,43 +1,43 @@
 output "argocd_url" {
   description = "Public URL configured for Argo CD"
-  value       = module.gitops.argocd_url
+  value       = try(module.gitops[0].argocd_url, null)
 }
 
 output "argocd_admin_password" {
   description = "Argo CD admin password managed by Terraform"
-  value       = module.gitops.argocd_admin_password
+  value       = try(module.gitops[0].argocd_admin_password, null)
   sensitive   = true
 }
 
 output "grafana_url" {
   description = "Public URL configured for Grafana"
-  value       = module.gitops.grafana_url
+  value       = try(module.gitops[0].grafana_url, null)
 }
 
 output "grafana_admin_password" {
   description = "Grafana admin password managed by Terraform"
-  value       = module.gitops.grafana_admin_password
+  value       = try(module.gitops[0].grafana_admin_password, null)
   sensitive   = true
 }
 
 output "grafana_acm_certificate_arn" {
   description = "ACM certificate ARN used by the Grafana ALB ingress"
-  value       = module.gitops.grafana_acm_certificate_arn
+  value       = try(module.gitops[0].grafana_acm_certificate_arn, null)
 }
 
 output "argo_rollouts_namespace" {
   description = "Namespace where Argo Rollouts is deployed"
-  value       = module.gitops.argo_rollouts_namespace
+  value       = try(module.gitops[0].argo_rollouts_namespace, null)
 }
 
 output "route53_zone_id" {
   description = "Route53 hosted zone ID used by ExternalDNS"
-  value       = module.gitops.route53_zone_id
+  value       = try(module.gitops[0].route53_zone_id, null)
 }
 
 output "route53_zone_name_servers" {
   description = "Name servers for the managed Route53 hosted zone"
-  value       = module.gitops.route53_zone_name_servers
+  value       = try(module.gitops[0].route53_zone_name_servers, null)
 }
 
 output "ecr_repository_urls" {

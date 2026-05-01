@@ -78,6 +78,11 @@ data "aws_caller_identity" "current" {
   count = var.create_github_actions_role ? 1 : 0
 }
 
+data "aws_iam_role" "github_actions_existing" {
+  count = var.use_existing_github_actions_role ? 1 : 0
+  name  = var.github_actions_role_name
+}
+
 resource "aws_iam_openid_connect_provider" "eks" {
   count           = var.create_irsa_roles ? 1 : 0
   url             = var.oidc_provider_issuer_url
@@ -134,7 +139,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 }
 
 data "aws_iam_policy_document" "github_actions_ecr_push" {
-  count = var.create_github_actions_role ? 1 : 0
+  count = var.create_github_actions_role || var.use_existing_github_actions_role ? 1 : 0
 
   statement {
     effect = "Allow"
@@ -163,7 +168,7 @@ data "aws_iam_policy_document" "github_actions_ecr_push" {
 }
 
 resource "aws_iam_policy" "github_actions_ecr_push" {
-  count       = var.create_github_actions_role ? 1 : 0
+  count       = var.create_github_actions_role || var.use_existing_github_actions_role ? 1 : 0
   name        = "${var.github_actions_role_name}-ecr-push"
   description = "Minimal ECR push policy for GitHub Actions"
   policy      = data.aws_iam_policy_document.github_actions_ecr_push[0].json
@@ -176,8 +181,8 @@ resource "aws_iam_role" "github_actions" {
 }
 
 resource "aws_iam_role_policy_attachment" "github_actions_ecr_push" {
-  count      = var.create_github_actions_role ? 1 : 0
-  role       = aws_iam_role.github_actions[0].name
+  count      = var.create_github_actions_role || var.use_existing_github_actions_role ? 1 : 0
+  role       = var.create_github_actions_role ? aws_iam_role.github_actions[0].name : data.aws_iam_role.github_actions_existing[0].name
   policy_arn = aws_iam_policy.github_actions_ecr_push[0].arn
 }
 

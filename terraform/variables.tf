@@ -162,6 +162,24 @@ variable "create_github_actions_oidc_provider" {
   default     = false
 }
 
+variable "create_github_actions_role" {
+  description = "Whether Terraform should create the GitHub Actions IAM role."
+  type        = bool
+  default     = false
+}
+
+variable "use_existing_github_actions_role" {
+  description = "Whether Terraform should reuse an existing GitHub Actions IAM role."
+  type        = bool
+  default     = true
+}
+
+variable "deploy_gitops_addons" {
+  description = "Whether to deploy Helm-based GitOps and monitoring add-ons after the EKS cluster is ready."
+  type        = bool
+  default     = false
+}
+
 variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster."
   type        = string
