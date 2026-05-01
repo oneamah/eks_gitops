@@ -86,7 +86,7 @@ jobs:
           cat > backend.hcl <<EOF
           bucket       = "${{ vars['TF_STATE_BUCKET'] }}"
           key          = "${{ vars['TF_STATE_KEY'] || env.TF_STATE_KEY }}"
-          region       = "${{ env.AWS_REGION }}"
+          region       = "${{ vars['AWS_REGION'] }}"
           encrypt      = true
           use_lockfile = true
           EOF
