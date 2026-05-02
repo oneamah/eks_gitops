@@ -30,7 +30,7 @@ app.UseCors("Frontend");
 
 var summaries = new[]
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching", "Anything above 100°F is just plain hot!"
 };
 
 app.MapGet("/weatherforecast", () =>
