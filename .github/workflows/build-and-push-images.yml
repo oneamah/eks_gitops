@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - terraform
     paths:
       - backend/**
       - frontend/**
@@ -11,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
@@ -115,3 +116,32 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
         env:
           SERVICE_LABEL: ${{ matrix.service }}
+
+  update-gitops-manifests:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Update backend and frontend image tags
+        shell: bash
+        run: |
+          sed -i "s|backend:.*|backend:${GITHUB_SHA}|" gitops/apps/backend/deployment.yaml
+          sed -i "s|frontend:.*|frontend:${GITHUB_SHA}|" gitops/apps/frontend/deployment.yaml
+
+      - name: Commit GitOps manifest updates
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gitops/apps/backend/deployment.yaml gitops/apps/frontend/deployment.yaml
+          git commit -m "chore: update GitOps image tags to ${GITHUB_SHA}"
+          git push origin HEAD:${GITHUB_REF_NAME}
