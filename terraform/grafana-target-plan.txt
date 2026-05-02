@@ -1,0 +1,256 @@
+module.iam.data.aws_iam_policy_document.eks_node_assume_role[0]: Reading...
+module.networking.data.aws_availability_zones.available: Reading...
+module.eks.aws_cloudwatch_log_group.eks: Refreshing state... [id=/aws/eks/main-eks/cluster]
+module.iam.data.aws_iam_policy_document.eks_cluster_assume_role[0]: Reading...
+module.iam_addons.data.aws_iam_policy_document.external_dns[0]: Reading...
+module.iam.data.aws_iam_policy_document.eks_node_assume_role[0]: Read complete after 0s [id=2851119427]
+module.networking.aws_vpc.main: Refreshing state... [id=vpc-0ebad6005b23409e9]
+module.iam_addons.data.aws_iam_policy_document.aws_load_balancer_controller[0]: Reading...
+module.iam_addons.data.aws_iam_policy_document.external_dns[0]: Read complete after 0s [id=2902363378]
+module.iam.data.aws_iam_policy_document.eks_cluster_assume_role[0]: Read complete after 0s [id=3552664922]
+module.iam.aws_iam_role.eks_node_group[0]: Refreshing state... [id=main-eks-node-role]
+module.iam_addons.data.aws_iam_policy_document.aws_load_balancer_controller[0]: Read complete after 0s [id=2074901990]
+module.iam.aws_iam_role.eks_cluster[0]: Refreshing state... [id=main-eks-cluster-role]
+module.iam_addons.aws_iam_policy.external_dns[0]: Refreshing state... [id=arn:aws:iam::072754096540:policy/main-eks-external-dns]
+module.iam_addons.aws_iam_policy.aws_load_balancer_controller[0]: Refreshing state... [id=arn:aws:iam::072754096540:policy/main-eks-aws-load-balancer-controller]
+module.networking.data.aws_availability_zones.available: Read complete after 0s [id=us-east-2]
+module.networking.aws_subnet.private[0]: Refreshing state... [id=subnet-00190e66a8ea04a5d]
+module.networking.aws_subnet.private[1]: Refreshing state... [id=subnet-048769ec6219b863f]
+module.eks.aws_security_group.node: Refreshing state... [id=sg-0c2a1c0d3fc965dbe]
+module.eks.aws_security_group.cluster: Refreshing state... [id=sg-0a8fa1e7579d8709b]
+module.sg.aws_security_group.private: Refreshing state... [id=sg-0b7c4f72e203c63bf]
+module.eks.aws_vpc_security_group_ingress_rule.cluster_from_node_https: Refreshing state... [id=sgr-071b66d2797c8d8e7]
+module.eks.aws_vpc_security_group_ingress_rule.node_from_cluster_https: Refreshing state... [id=sgr-0052c98759bfa5060]
+module.eks.aws_eks_cluster.main: Refreshing state... [id=main-eks]
+module.eks.aws_vpc_security_group_ingress_rule.node_from_cluster_kubelet: Refreshing state... [id=sgr-0a4e6b72067ced313]
+data.aws_eks_cluster_auth.main: Reading...
+module.eks.aws_eks_node_group.main: Refreshing state... [id=main-eks:main-eks-nodes]
+data.aws_eks_cluster_auth.main: Read complete after 0s [id=main-eks]
+module.iam_addons.data.tls_certificate.eks_oidc[0]: Reading...
+module.iam_addons.data.tls_certificate.eks_oidc[0]: Read complete after 1s [id=033a163afb2babc26f7883e642621ac361c93d61]
+module.iam_addons.aws_iam_openid_connect_provider.eks[0]: Refreshing state... [id=arn:aws:iam::072754096540:oidc-provider/oidc.eks.us-east-2.amazonaws.com/id/A3BED8ED9B71837D935DD23D65D57F61]
+module.eks.aws_eks_addon.coredns: Refreshing state... [id=main-eks:coredns]
+module.iam_addons.data.aws_iam_policy_document.aws_load_balancer_controller_assume_role[0]: Reading...
+module.iam_addons.data.aws_iam_policy_document.external_dns_assume_role[0]: Reading...
+module.iam_addons.data.aws_iam_policy_document.ebs_csi_assume_role[0]: Reading...
+module.iam_addons.data.aws_iam_policy_document.aws_load_balancer_controller_assume_role[0]: Read complete after 0s [id=1397820878]
+module.iam_addons.data.aws_iam_policy_document.external_dns_assume_role[0]: Read complete after 0s [id=76862018]
+module.iam_addons.data.aws_iam_policy_document.ebs_csi_assume_role[0]: Read complete after 0s [id=2736585007]
+module.iam_addons.aws_iam_role.aws_load_balancer_controller[0]: Refreshing state... [id=main-eks-alb-controller-role]
+module.iam_addons.aws_iam_role.external_dns[0]: Refreshing state... [id=main-eks-external-dns-role]
+module.iam_addons.aws_iam_role.ebs_csi[0]: Refreshing state... [id=main-eks-ebs-csi-role]
+module.iam_addons.aws_iam_role_policy_attachment.ebs_csi[0]: Refreshing state... [id=main-eks-ebs-csi-role/arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy]
+module.iam_addons.aws_iam_role_policy_attachment.aws_load_balancer_controller[0]: Refreshing state... [id=main-eks-alb-controller-role/arn:aws:iam::072754096540:policy/main-eks-aws-load-balancer-controller]
+module.iam_addons.aws_iam_role_policy_attachment.external_dns[0]: Refreshing state... [id=main-eks-external-dns-role/arn:aws:iam::072754096540:policy/main-eks-external-dns]
+module.gitops[0].aws_acm_certificate.grafana[0]: Refreshing state... [id=arn:aws:acm:us-east-2:072754096540:certificate/ba2bb1fd-04da-4a48-ab11-9a9784b81b00]
+module.gitops[0].kubernetes_service_account_v1.aws_load_balancer_controller: Refreshing state... [id=kube-system/aws-load-balancer-controller]
+module.gitops[0].random_password.grafana_admin: Refreshing state... [id=none]
+module.gitops[0].aws_route53_record.grafana_certificate_validation["grafana.marmil.co"]: Refreshing state... [id=Z06560653HHLUZYIU86O4__714213e9c90b060c5b187e4ac2ba5068.grafana.marmil.co._CNAME]
+module.gitops[0].helm_release.aws_load_balancer_controller: Refreshing state... [id=aws-load-balancer-controller]
+module.gitops[0].aws_acm_certificate_validation.grafana[0]: Refreshing state... [id=2026-05-01 23:34:11.803 +0000 UTC]
+module.gitops[0].time_sleep.aws_load_balancer_controller_webhook_ready: Refreshing state... [id=2026-05-01T23:45:55Z]
+module.gitops[0].helm_release.loki: Refreshing state... [id=loki]
+module.gitops[0].helm_release.prometheus: Refreshing state... [id=prometheus]
+module.gitops[0].helm_release.grafana: Refreshing state... [id=grafana]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+-/+ destroy and then create replacement
+ <= read (data resources)
+
+Terraform will perform the following actions:
+
+  # module.eks.aws_security_group.node will be updated in-place
+  ~ resource "aws_security_group" "node" {
+        id                     = "sg-0c2a1c0d3fc965dbe"
+      ~ ingress                = [
+          - {
+              - cidr_blocks      = []
+              - from_port        = 0
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "-1"
+              - security_groups  = []
+              - self             = true
+              - to_port          = 0
+                # (1 unchanged attribute hidden)
+            },
+          - {
+              - cidr_blocks      = []
+              - from_port        = 1025
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = [
+                  - "sg-0a8fa1e7579d8709b",
+                ]
+              - self             = false
+              - to_port          = 65535
+                # (1 unchanged attribute hidden)
+            },
+          - {
+              - cidr_blocks      = []
+              - from_port        = 443
+              - ipv6_cidr_blocks = []
+              - prefix_list_ids  = []
+              - protocol         = "tcp"
+              - security_groups  = [
+                  - "sg-0a8fa1e7579d8709b",
+                ]
+              - self             = false
+              - to_port          = 443
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + cidr_blocks      = []
+              + from_port        = 0
+              + ipv6_cidr_blocks = []
+              + prefix_list_ids  = []
+              + protocol         = "-1"
+              + security_groups  = []
+              + self             = true
+              + to_port          = 0
+            },
+        ]
+        name                   = "main-eks-node-sg"
+        tags                   = {}
+        # (9 unchanged attributes hidden)
+    }
+
+  # module.gitops[0].data.aws_route53_zone.primary[0] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_route53_zone" "primary" {
+      + arn                        = (known after apply)
+      + caller_reference           = (known after apply)
+      + comment                    = (known after apply)
+      + id                         = (known after apply)
+      + linked_service_description = (known after apply)
+      + linked_service_principal   = (known after apply)
+      + name                       = "marmil.co."
+      + name_servers               = (known after apply)
+      + primary_name_server        = (known after apply)
+      + private_zone               = false
+      + resource_record_set_count  = (known after apply)
+      + tags                       = (known after apply)
+      + zone_id                    = (known after apply)
+    }
+
+  # module.gitops[0].aws_acm_certificate_validation.grafana[0] must be replaced
+-/+ resource "aws_acm_certificate_validation" "grafana" {
+      ~ id                      = "2026-05-01 23:34:11.803 +0000 UTC" -> (known after apply)
+      ~ validation_record_fqdns = [
+          - "_714213e9c90b060c5b187e4ac2ba5068.grafana.marmil.co",
+        ] -> (known after apply) # forces replacement
+        # (2 unchanged attributes hidden)
+    }
+
+  # module.gitops[0].aws_route53_record.grafana_certificate_validation["grafana.marmil.co"] must be replaced
+-/+ resource "aws_route53_record" "grafana_certificate_validation" {
+      ~ fqdn                             = "_714213e9c90b060c5b187e4ac2ba5068.grafana.marmil.co" -> (known after apply)
+      ~ id                               = "Z06560653HHLUZYIU86O4__714213e9c90b060c5b187e4ac2ba5068.grafana.marmil.co._CNAME" -> (known after apply)
+      - multivalue_answer_routing_policy = false -> null
+        name                             = "_714213e9c90b060c5b187e4ac2ba5068.grafana.marmil.co"
+      ~ zone_id                          = "Z06560653HHLUZYIU86O4" -> (known after apply) # forces replacement
+        # (6 unchanged attributes hidden)
+    }
+
+  # module.gitops[0].helm_release.grafana will be created
+  + resource "helm_release" "grafana" {
+      + atomic                     = false
+      + chart                      = "grafana"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "grafana"
+      + namespace                  = "monitoring"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://grafana.github.io/helm-charts"
+      + reset_values               = false
+      + reuse_values               = false
+      + set_sensitive              = [
+          + {
+              + name  = "adminPassword"
+              + value = (sensitive value)
+            },
+        ]
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 900
+      + upgrade_install            = false
+      + values                     = [
+          + <<-EOT
+                "datasources":
+                  "datasources.yaml":
+                    "apiVersion": 1
+                    "datasources":
+                    - "access": "proxy"
+                      "isDefault": true
+                      "name": "Prometheus"
+                      "type": "prometheus"
+                      "url": "http://prometheus-server.monitoring.svc.cluster.local"
+                    - "access": "proxy"
+                      "name": "Loki"
+                      "type": "loki"
+                      "url": "http://loki.monitoring.svc.cluster.local:3100"
+                "ingress":
+                  "annotations":
+                    "alb.ingress.kubernetes.io/backend-protocol": "HTTP"
+                    "alb.ingress.kubernetes.io/certificate-arn": "arn:aws:acm:us-east-2:072754096540:certificate/ba2bb1fd-04da-4a48-ab11-9a9784b81b00"
+                    "alb.ingress.kubernetes.io/listen-ports": "[{\"HTTP\":80},{\"HTTPS\":443}]"
+                    "alb.ingress.kubernetes.io/scheme": "internet-facing"
+                    "alb.ingress.kubernetes.io/ssl-redirect": "443"
+                    "alb.ingress.kubernetes.io/target-type": "ip"
+                    "external-dns.alpha.kubernetes.io/hostname": "grafana.marmil.co"
+                  "enabled": true
+                  "hosts":
+                  - "grafana.marmil.co"
+                  "ingressClassName": "alb"
+                  "path": "/"
+                  "pathType": "Prefix"
+                  "tls": []
+                "persistence":
+                  "enabled": false
+                "service":
+                  "type": "ClusterIP"
+            EOT,
+        ]
+      + verify                     = false
+      + version                    = "10.5.15"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+Plan: 3 to add, 1 to change, 2 to destroy.
+
+Changes to Outputs:
+  ~ route53_zone_id             = "Z06560653HHLUZYIU86O4" -> (known after apply)
+
+Warning: Resource targeting is in effect
+
+You are creating a plan with the -target option, which means that the result
+of this plan may not represent all of the changes requested by the current
+configuration.
+
+The -target option is not for routine use, and is provided only for
+exceptional situations such as recovering from errors or mistakes, or when
+Terraform specifically suggests to use it as part of an error message.
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.

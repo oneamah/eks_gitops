@@ -44,6 +44,16 @@ output "argo_rollouts_namespace" {
   value       = helm_release.argo_rollouts.namespace
 }
 
+output "argo_rollouts_url" {
+  description = "Public URL configured for the Argo Rollouts dashboard"
+  value       = local.argo_rollouts_url
+}
+
+output "argo_rollouts_acm_certificate_arn" {
+  description = "ACM certificate ARN used by the Argo Rollouts ALB ingress"
+  value       = local.argo_rollouts_effective_certificate_arn
+}
+
 output "monitoring_namespace" {
   description = "Namespace where Prometheus, Loki, and Grafana are deployed"
   value       = local.monitoring_namespace

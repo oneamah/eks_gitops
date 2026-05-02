@@ -10,6 +10,30 @@ variable "cluster_name" {
   default     = "main-eks"
 }
 
+variable "node_instance_types" {
+  description = "Instance types for the EKS managed node group."
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "desired_size" {
+  description = "Desired number of nodes in the EKS managed node group."
+  type        = number
+  default     = 3
+}
+
+variable "min_size" {
+  description = "Minimum number of nodes in the EKS managed node group."
+  type        = number
+  default     = 2
+}
+
+variable "max_size" {
+  description = "Maximum number of nodes in the EKS managed node group."
+  type        = number
+  default     = 4
+}
+
 variable "git" {
   description = "Git repository information for the application."
   type = object({
@@ -122,6 +146,18 @@ variable "grafana_hostname" {
 
 variable "grafana_acm_certificate_arn" {
   description = "Optional ACM certificate ARN for HTTPS termination on the Grafana ALB ingress."
+  type        = string
+  default     = ""
+}
+
+variable "argo_rollouts_hostname" {
+  description = "Public hostname for the Argo Rollouts dashboard."
+  type        = string
+  default     = "rollouts.marmil.co"
+}
+
+variable "argo_rollouts_acm_certificate_arn" {
+  description = "Optional ACM certificate ARN for HTTPS termination on the Argo Rollouts ALB ingress."
   type        = string
   default     = ""
 }
