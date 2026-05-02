@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: 072754096540.dkr.ecr.us-east-2.amazonaws.com/backend:9680216c1e1e2f6f94be3e5bbaf51883edee7d89
+          image: 072754096540.dkr.ecr.us-east-2.amazonaws.com/backend:ead05c5d11c29113c50f877b4b74510fd30e9394
           imagePullPolicy: Always
           env:
             - name: ASPNETCORE_ENVIRONMENT
