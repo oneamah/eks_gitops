@@ -12,6 +12,9 @@ locals {
   grafana_effective_certificate_arn     = var.grafana_acm_certificate_arn != "" ? var.grafana_acm_certificate_arn : aws_acm_certificate_validation.grafana[0].certificate_arn
   grafana_scheme                        = local.grafana_effective_certificate_arn != "" ? "https" : "http"
   grafana_url                           = "${local.grafana_scheme}://${var.grafana_hostname}"
+  argo_rollouts_effective_certificate_arn = var.argo_rollouts_acm_certificate_arn != "" ? var.argo_rollouts_acm_certificate_arn : aws_acm_certificate_validation.argo_rollouts[0].certificate_arn
+  argo_rollouts_scheme                    = local.argo_rollouts_effective_certificate_arn != "" ? "https" : "http"
+  argo_rollouts_url                       = "${local.argo_rollouts_scheme}://${var.argo_rollouts_hostname}"
   argocd_ingress_annotations = merge(
     {
       "alb.ingress.kubernetes.io/backend-protocol" = "HTTP"
@@ -36,6 +39,20 @@ locals {
     },
     local.grafana_effective_certificate_arn != "" ? {
       "alb.ingress.kubernetes.io/certificate-arn" = local.grafana_effective_certificate_arn
+      "alb.ingress.kubernetes.io/listen-ports"    = "[{\"HTTP\":80},{\"HTTPS\":443}]"
+      "alb.ingress.kubernetes.io/ssl-redirect"    = "443"
+    } : {}
+  )
+  argo_rollouts_ingress_annotations = merge(
+    {
+      "alb.ingress.kubernetes.io/backend-protocol" = "HTTP"
+      "alb.ingress.kubernetes.io/listen-ports"     = "[{\"HTTP\":80}]"
+      "alb.ingress.kubernetes.io/scheme"           = "internet-facing"
+      "alb.ingress.kubernetes.io/target-type"      = "ip"
+      "external-dns.alpha.kubernetes.io/hostname"  = var.argo_rollouts_hostname
+    },
+    local.argo_rollouts_effective_certificate_arn != "" ? {
+      "alb.ingress.kubernetes.io/certificate-arn" = local.argo_rollouts_effective_certificate_arn
       "alb.ingress.kubernetes.io/listen-ports"    = "[{\"HTTP\":80},{\"HTTPS\":443}]"
       "alb.ingress.kubernetes.io/ssl-redirect"    = "443"
     } : {}
@@ -130,6 +147,39 @@ resource "aws_acm_certificate_validation" "grafana" {
   count                   = var.grafana_acm_certificate_arn == "" ? 1 : 0
   certificate_arn         = aws_acm_certificate.grafana[0].arn
   validation_record_fqdns = [for record in aws_route53_record.grafana_certificate_validation : record.fqdn]
+}
+
+resource "aws_acm_certificate" "argo_rollouts" {
+  count             = var.argo_rollouts_acm_certificate_arn == "" ? 1 : 0
+  domain_name       = var.argo_rollouts_hostname
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "argo_rollouts_certificate_validation" {
+  for_each = var.argo_rollouts_acm_certificate_arn == "" ? {
+    for option in aws_acm_certificate.argo_rollouts[0].domain_validation_options : option.domain_name => {
+      name   = option.resource_record_name
+      record = option.resource_record_value
+      type   = option.resource_record_type
+    }
+  } : {}
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = local.route53_zone_id
+}
+
+resource "aws_acm_certificate_validation" "argo_rollouts" {
+  count                   = var.argo_rollouts_acm_certificate_arn == "" ? 1 : 0
+  certificate_arn         = aws_acm_certificate.argo_rollouts[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.argo_rollouts_certificate_validation : record.fqdn]
 }
 
 resource "kubernetes_service_account_v1" "aws_load_balancer_controller" {
@@ -227,6 +277,7 @@ resource "helm_release" "datadog" {
   chart            = "datadog"
   version          = "3.119.0"
   create_namespace = true
+  timeout          = 900
 
   depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
 
@@ -285,6 +336,7 @@ resource "helm_release" "argocd" {
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
   create_namespace = true
+  timeout          = 900
 
   depends_on = [aws_acm_certificate_validation.argocd, time_sleep.aws_load_balancer_controller_webhook_ready]
 
@@ -320,7 +372,7 @@ resource "helm_release" "argocd" {
         tls              = local.argocd_effective_certificate_arn != ""
         aws = {
           serviceType            = "ClusterIP"
-          backendProtocolVersion = "HTTP"
+          backendProtocolVersion = "HTTP1"
         }
       }
     }
@@ -334,6 +386,7 @@ resource "helm_release" "argo_rollouts" {
   chart            = "argo-rollouts"
   version          = "2.40.5"
   create_namespace = true
+  timeout          = 900
 
   depends_on = [time_sleep.aws_load_balancer_controller_webhook_ready]
 
@@ -342,6 +395,15 @@ resource "helm_release" "argo_rollouts" {
       enabled = true
       service = {
         type = "ClusterIP"
+      }
+      ingress = {
+        enabled          = true
+        ingressClassName = "alb"
+        annotations      = local.argo_rollouts_ingress_annotations
+        hosts            = [var.argo_rollouts_hostname]
+        paths            = ["/"]
+        pathType         = "Prefix"
+        tls              = []
       }
     }
   })]
@@ -434,6 +496,7 @@ resource "helm_release" "grafana" {
   repository       = "https://grafana.github.io/helm-charts"
   chart            = "grafana"
   create_namespace = true
+  timeout          = 900
 
   depends_on = [helm_release.prometheus, helm_release.loki, aws_acm_certificate_validation.grafana, time_sleep.aws_load_balancer_controller_webhook_ready]
 

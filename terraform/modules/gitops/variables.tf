@@ -136,3 +136,14 @@ variable "grafana_acm_certificate_arn" {
   type        = string
   default     = ""
 }
+
+variable "argo_rollouts_hostname" {
+  description = "Public hostname for the Argo Rollouts dashboard"
+  type        = string
+}
+
+variable "argo_rollouts_acm_certificate_arn" {
+  description = "Optional ACM certificate ARN for HTTPS termination on the Argo Rollouts ALB ingress"
+  type        = string
+  default     = ""
+}

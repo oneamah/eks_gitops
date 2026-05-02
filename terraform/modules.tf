@@ -19,6 +19,10 @@ module "eks" {
   source                    = "./modules/eks"
   cluster_name              = var.cluster_name
   cluster_version           = var.cluster_version
+  node_instance_types       = var.node_instance_types
+  desired_size              = var.desired_size
+  min_size                  = var.min_size
+  max_size                  = var.max_size
   cluster_role_arn          = module.iam.eks_cluster_role_arn
   node_role_arn             = module.iam.eks_node_role_arn
   vpc_id                    = module.networking.vpc_id
@@ -61,12 +65,16 @@ module "gitops" {
   argocd_acm_certificate_arn  = var.argocd_acm_certificate_arn
   grafana_hostname            = var.grafana_hostname
   grafana_acm_certificate_arn = var.grafana_acm_certificate_arn
+  argo_rollouts_hostname      = var.argo_rollouts_hostname
+  argo_rollouts_acm_certificate_arn = var.argo_rollouts_acm_certificate_arn
   image_pull_secret_name      = var.image_pull_secret_name
   image_pull_secret_namespace = var.image_pull_secret_namespace
   image_pull_secret_server    = var.image_pull_secret_server
   image_pull_secret_username  = var.image_pull_secret_username
   image_pull_secret_password  = var.image_pull_secret_password
   image_pull_secret_email     = var.image_pull_secret_email
+
+  depends_on = [module.eks, module.iam_addons]
 }
 module "sg" {
   source = "./modules/sg"
