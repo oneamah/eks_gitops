@@ -1,0 +1,141 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to destroy from"
+        required: false
+        default: main
+      deploy_gitops_addons:
+        description: "Set to true when the live state includes Argo CD, Grafana, Prometheus, Loki, and other GitOps add-ons"
+        required: true
+        default: "true"
+      confirm:
+        description: "Type destroy to allow terraform destroy"
+        required: true
+        default: "no"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-destroy-main
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  TF_WORKING_DIR: terraform
+  AWS_REGION: us-east-2
+  TF_STATE_REGION: us-east-1
+  TF_STATE_KEY: eks-gitops/terraform.tfstate
+
+jobs:
+  destroy:
+    if: ${{ inputs.confirm == 'destroy' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Check out requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars['AWS_ROLE_TO_ASSUME'] }}
+          role-session-name: github-actions-terraform-destroy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Write Terraform variables file
+        run: |
+          test -n "${{ secrets['TF_VARS_JSON'] }}" || {
+            echo "TF_VARS_JSON GitHub secret is required."
+            exit 1
+          }
+
+          cat > tfvars.base.json <<'EOF'
+          ${{ secrets['TF_VARS_JSON'] }}
+          EOF
+
+          jq \
+            --arg repo_url "${{ github.server_url }}/${{ github.repository }}.git" \
+            --arg branch "${{ inputs.ref }}" \
+            --arg auth_token "${{ github.token }}" \
+            --argjson deploy_gitops_addons ${{ inputs.deploy_gitops_addons }} \
+            '. + {
+              deploy_gitops_addons: $deploy_gitops_addons,
+              git: {
+                repo_url: $repo_url,
+                branch: $branch,
+                auth_token: $auth_token
+              }
+            }' tfvars.base.json > github.auto.tfvars.json
+
+      - name: Write Terraform backend config
+        run: |
+          test -n "${{ vars['TF_STATE_BUCKET'] }}" || {
+            echo "TF_STATE_BUCKET GitHub variable is required."
+            exit 1
+          }
+
+          cat > backend.hcl <<EOF
+          bucket       = "${{ vars['TF_STATE_BUCKET'] }}"
+          key          = "${{ vars['TF_STATE_KEY'] || env.TF_STATE_KEY }}"
+          region       = "${{ env.TF_STATE_REGION }}"
+          encrypt      = true
+          use_lockfile = true
+          EOF
+
+      - name: Terraform init
+        run: terraform init -input=false -backend-config=backend.hcl
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform destroy plan
+        run: terraform plan -destroy -input=false -no-color -out=tfdestroy
+
+      - name: Render destroy plan text
+        run: terraform show -no-color tfdestroy > tfdestroy.txt
+
+      - name: Upload destroy plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-destroy-${{ github.run_id }}
+          path: |
+            terraform/tfdestroy
+            terraform/tfdestroy.txt
+          if-no-files-found: error
+
+      - name: Terraform destroy
+        run: terraform destroy -input=false -auto-approve
+
+      - name: Publish destroy summary
+        run: |
+          {
+            echo '## Terraform Destroy'
+            echo ''
+            echo 'Destroyed Terraform-managed infrastructure after manual confirmation through `workflow_dispatch`.'
+            echo ''
+            echo 'ref: `${{ inputs.ref }}`'
+            echo ''
+            echo 'deploy_gitops_addons: `${{ inputs.deploy_gitops_addons }}`'
+            echo ''
+            echo 'Confirmation input received: `${{ inputs.confirm }}`.'
+            echo ''
+            echo '```text'
+            sed -n '1,200p' tfdestroy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
