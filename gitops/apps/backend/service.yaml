@@ -1,7 +1,37 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: backend-root
+  namespace: apps
+  labels:
+    app.kubernetes.io/name: backend
+spec:
+  selector:
+    app.kubernetes.io/name: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-stable
+  namespace: apps
+  labels:
+    app.kubernetes.io/name: backend
+spec:
+  selector:
+    app.kubernetes.io/name: backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-canary
   namespace: apps
   labels:
     app.kubernetes.io/name: backend

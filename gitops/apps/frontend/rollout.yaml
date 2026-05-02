@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: frontend
   namespace: apps
@@ -7,9 +7,16 @@ metadata:
     app.kubernetes.io/name: frontend
 spec:
   replicas: 2
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: frontend
+  strategy:
+    blueGreen:
+      activeService: frontend-active
+      previewService: frontend-preview
+      autoPromotionSeconds: 30
+      scaleDownDelaySeconds: 30
   template:
     metadata:
       labels:

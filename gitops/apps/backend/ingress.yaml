@@ -4,6 +4,7 @@ metadata:
   name: backend
   namespace: apps
   annotations:
+    alb.ingress.kubernetes.io/actions.backend-root: '{"Type":"forward","ForwardConfig":{"TargetGroups":[{"ServiceName":"backend-canary","ServicePort":"80","Weight":0},{"ServiceName":"backend-stable","ServicePort":"80","Weight":100}]}}'
     alb.ingress.kubernetes.io/backend-protocol: HTTP
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-2:072754096540:certificate/da5dc745-8149-4fb2-93b7-465f65ad94ab
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
@@ -21,6 +22,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: backend
+                name: backend-root
                 port:
-                  number: 80
+                  name: use-annotation

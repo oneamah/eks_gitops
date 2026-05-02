@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: backend
   namespace: apps
@@ -7,9 +7,26 @@ metadata:
     app.kubernetes.io/name: backend
 spec:
   replicas: 2
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: backend
+  strategy:
+    canary:
+      stableService: backend-stable
+      canaryService: backend-canary
+      trafficRouting:
+        alb:
+          ingress: backend
+          rootService: backend-root
+          servicePort: 80
+      steps:
+        - setWeight: 10
+        - pause:
+            duration: 10s
+        - setWeight: 50
+        - pause:
+            duration: 10s
   template:
     metadata:
       labels:
